@@ -1,14 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>AR Memory Frame (Pro)</title>
-  
+
   <!-- A-Frame & MindAR -->
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
-  
+
   <!-- FontAwesome & Fonts -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
@@ -22,7 +23,8 @@
       margin: 0;
       overflow: hidden;
       font-family: 'Outfit', sans-serif;
-      background-color: #000; /* Fallback */
+      background-color: #000;
+      /* Fallback */
     }
 
     /* --- UI LAYER --- */
@@ -34,7 +36,8 @@
       display: flex;
       gap: 25px;
       z-index: 100;
-      pointer-events: none; /* Let clicks pass through around buttons */
+      pointer-events: none;
+      /* Let clicks pass through around buttons */
     }
 
     /* Pointer events restoration for buttons */
@@ -42,7 +45,8 @@
       pointer-events: auto;
       background: rgba(20, 20, 20, 0.65);
       backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px); /* Safari support */
+      -webkit-backdrop-filter: blur(16px);
+      /* Safari support */
       border: 1px solid rgba(255, 255, 255, 0.15);
       border-radius: 50%;
       width: 64px;
@@ -61,7 +65,7 @@
       transform: scale(0.9);
       background: rgba(255, 255, 255, 0.1);
     }
-    
+
     .glass-btn:hover {
       background: rgba(40, 40, 40, 0.8);
       border-color: rgba(255, 255, 255, 0.3);
@@ -71,7 +75,10 @@
     /* --- SNAPSHOT FLASH --- */
     #flash {
       position: fixed;
-      top: 0; left: 0; width: 100%; height: 100%;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
       background: white;
       opacity: 0;
       pointer-events: none;
@@ -92,7 +99,7 @@
       font-size: 13px;
       pointer-events: none;
       z-index: 10;
-      text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
     }
 
     /* --- ACTION BUTTON (HIDDEN DEFAULT) --- */
@@ -109,8 +116,9 @@
       text-decoration: none;
       opacity: 0;
       pointer-events: none;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-      transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); /* Bouncy pop */
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+      transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+      /* Bouncy pop */
       z-index: 200;
       display: flex;
       align-items: center;
@@ -122,13 +130,141 @@
       pointer-events: auto;
       transform: translate(-50%, -50%) scale(1);
     }
+
+    /* --- CUSTOM SCANNER UI --- */
+    .scanner-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 50;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .scanner-box {
+      width: 70vw;
+      height: 70vw;
+      max-width: 300px;
+      max-height: 300px;
+      position: relative;
+    }
+
+    .scanner-corner {
+      position: absolute;
+      width: 40px;
+      height: 40px;
+      border-color: rgba(255, 255, 255, 0.9);
+      border-style: solid;
+      border-width: 4px;
+      box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+      /* Neon glow effect */
+    }
+
+    .tl {
+      top: 0;
+      left: 0;
+      border-right: none;
+      border-bottom: none;
+      border-top-left-radius: 16px;
+    }
+
+    .tr {
+      top: 0;
+      right: 0;
+      border-left: none;
+      border-bottom: none;
+      border-top-right-radius: 16px;
+    }
+
+    .bl {
+      bottom: 0;
+      left: 0;
+      border-right: none;
+      border-top: none;
+      border-bottom-left-radius: 16px;
+    }
+
+    .br {
+      bottom: 0;
+      right: 0;
+      border-left: none;
+      border-top: none;
+      border-bottom-right-radius: 16px;
+    }
+
+    .scanner-line {
+      position: absolute;
+      top: 0;
+      left: 2%;
+      width: 96%;
+      height: 2px;
+      background: #00ffff;
+      box-shadow: 0 0 10px #00ffff, 0 0 20px #00ffff;
+      animation: scan 3s ease-in-out infinite;
+      opacity: 0.8;
+    }
+
+    @keyframes scan {
+
+      0%,
+      100% {
+        top: 5%;
+        opacity: 0;
+      }
+
+      10% {
+        opacity: 1;
+      }
+
+      90% {
+        opacity: 1;
+      }
+
+      50% {
+        top: 95%;
+      }
+    }
+
+    .scanner-text {
+      margin-top: 30px;
+      color: rgba(255, 255, 255, 0.8);
+      font-size: 14px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      font-weight: 500;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+      background: rgba(0, 0, 0, 0.3);
+      padding: 8px 16px;
+      border-radius: 20px;
+      backdrop-filter: blur(4px);
+    }
+
+    .hidden {
+      opacity: 0;
+      transition: opacity 0.5s ease;
+    }
   </style>
 </head>
 
 <body>
 
   <!-- UI Overlays -->
-  <div class="scan-guide">Scan Target Photo</div>
+  <!-- Scanner Overlay (Replaces default Loading/Scanning) -->
+  <div class="scanner-overlay" id="scanner">
+    <div class="scanner-box">
+      <div class="scanner-corner tl"></div>
+      <div class="scanner-corner tr"></div>
+      <div class="scanner-corner bl"></div>
+      <div class="scanner-corner br"></div>
+      <div class="scanner-line"></div>
+    </div>
+    <div class="scanner-text">Point at Code / Image</div>
+  </div>
   <div id="flash"></div>
 
   <div class="ui-container" id="ui-layer">
@@ -145,24 +281,19 @@
 
   <!-- AR SCENE
        mindar-image: path to compiled .mind file
-       vr-mode-ui: disabled to hide default VR button
+       uiLoading: no; uiScanning: no; -> We use our custom overlay
        renderer: preserveDrawingBuffer=true required for screenshots
   -->
-  <a-scene mindar-image="imageTargetSrc: assets/targets.mind; uiScanning: no;" 
-           vr-mode-ui="enabled: false" 
-           device-orientation-permission-ui="enabled: false"
-           renderer="preserveDrawingBuffer: true, alpha: true, colorManagement: true, physicalLights: true">
+  <a-scene mindar-image="imageTargetSrc: assets/targets.mind; uiLoading: no; uiScanning: no;"
+    vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false"
+    renderer="preserveDrawingBuffer: true, alpha: true, colorManagement: true, physicalLights: true">
 
     <a-assets>
       <!-- ASSET MANAGEMENT -->
       <!-- Video 1 -->
-      <video id="arVideo1" 
-             src="assets/video1.mp4" 
-             loop="false" 
-             playsinline 
-             webkit-playsinline 
-             crossorigin="anonymous"></video>
-      
+      <video id="arVideo1" src="assets/video1.mp4" loop="false" playsinline webkit-playsinline
+        crossorigin="anonymous"></video>
+
       <!-- Video 2 (For multi-target demo) -->
       <!-- <video id="arVideo2" src="assets/video2.mp4" ... ></video> -->
     </a-assets>
@@ -174,29 +305,18 @@
       Index 0 in the .mind file
     -->
     <a-entity mindar-image-target="targetIndex: 0" id="target-0">
-      
+
       <!-- Video Plane -->
       <!-- opacity: 0.99 fixes z-fighting/transparency bugs in some WebXR contexts -->
-      <a-video src="#arVideo1" 
-               width="1" height="1.5" 
-               position="0 0 0"
-               opacity="0.99"></a-video>
-      
+      <a-video src="#arVideo1" width="1" height="1.5" position="0 0 0" opacity="0.99"></a-video>
+
       <!-- 3D Floating Caption container -->
       <a-entity position="0 0.9 0.1">
         <!-- Background glass for text -->
-        <a-plane color="#000" 
-                 opacity="0.6" 
-                 width="0.9" height="0.18" 
-                 position="0 0 -0.01"></a-plane>
-        
+        <a-plane color="#000" opacity="0.6" width="0.9" height="0.18" position="0 0 -0.01"></a-plane>
+
         <!-- Text -->
-        <a-text value="THE MEMORY • 2024" 
-                color="#FFF" 
-                align="center" 
-                width="2.5"
-                font="roboto"
-                shader="msdf">
+        <a-text value="THE MEMORY • 2024" color="#FFF" align="center" width="2.5" font="roboto" shader="msdf">
         </a-text>
       </a-entity>
 
@@ -223,6 +343,7 @@
     const uiLayer = document.querySelector("#ui-layer");
     const flash = document.querySelector("#flash");
     const galleryBtn = document.querySelector("#gallery-btn");
+    const scannerOverlay = document.querySelector("#scanner");
 
     // Targets configuration
     // Add more here for Gallery Mode: { id: 'target-0', videoId: '#arVideo1' }, ...
@@ -234,7 +355,7 @@
 
     // 1. Audio Control
     const muteBtn = document.querySelector("#mute-btn");
-    
+
     function updateMuteIcon(isMuted) {
       muteBtn.innerHTML = isMuted ? '<i class="fas fa-volume-mute"></i>' : '<i class="fas fa-volume-up"></i>';
     }
@@ -251,7 +372,7 @@
 
     // 2. Screenshot Logic
     const snapBtn = document.querySelector("#snap-btn");
-    
+
     snapBtn.addEventListener('click', () => {
       // Hide UI
       uiLayer.style.display = 'none';
@@ -267,7 +388,7 @@
         // Note: 'perspective' captures the 3D scene (video + augmented content)
         // 'equirectangular' is for 360.
         scene.components.screenshot.capture('perspective');
-        
+
         // Restore UI
         uiLayer.style.display = 'flex';
         if (galleryBtn) galleryBtn.style.display = 'flex'; // Note: btn has flex logic in CSS via class?
@@ -275,7 +396,7 @@
         // But we rely on .visible class for it usually.
         // Just clearing 'none' to let CSS rule take over if it was active.
         if (galleryBtn.classList.contains('visible')) {
-            galleryBtn.style.display = '';
+          galleryBtn.style.display = '';
         }
       }, 250);
     });
@@ -287,23 +408,34 @@
 
       el.addEventListener("targetFound", () => {
         console.log(`Target Found: ${t.id}`);
+
+        // Hide Scanner
+        scannerOverlay.classList.add('hidden');
+
         activeVideo = vid;
-        // Start muted by default as per requirements
-        vid.muted = true; 
-        updateMuteIcon(true);
+        // Start UNMUTED by default (PRO feature req)
+        vid.muted = false;
+        updateMuteIcon(false);
         vid.currentTime = 0;
-        vid.play();
-        
+        vid.play().catch(e => {
+          console.warn("Autoplay blocked, waiting for interaction", e);
+          // Optional: Show a "Tap to Play" hint here if needed
+          // For now, we leave the mute button logic as fallback
+        });
+
         // Hide "Action Button" if visible
         galleryBtn.classList.remove('visible');
       });
 
       el.addEventListener("targetLost", () => {
         console.log(`Target Lost: ${t.id}`);
+        // Show Scanner
+        scannerOverlay.classList.remove('hidden');
+
         vid.pause();
         activeVideo = null;
       });
-      
+
       // Feature: Action on Finish
       vid.addEventListener('ended', () => {
         console.log("Video Finished");
@@ -313,4 +445,5 @@
 
   </script>
 </body>
+
 </html>

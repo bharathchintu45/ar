@@ -269,6 +269,8 @@
 
   <div class="ui-container" id="ui-layer">
     <div class="glass-btn" id="mute-btn" title="Toggle Audio"><i class="fas fa-volume-mute"></i></div>
+    <div class="glass-btn" id="torch-btn" title="Toggle Flashlight"><i class="fas fa-bolt"></i></div>
+    <div class="glass-btn" id="rec-btn" title="Record Video"><i class="fas fa-video"></i></div>
     <div class="glass-btn" id="snap-btn" title="Take Screenshot"><i class="fas fa-camera"></i></div>
   </div>
 
@@ -361,14 +363,110 @@
     }
 
     muteBtn.addEventListener('click', () => {
-      // Toggle global state or active video state? 
-      // Better to check active video, if none, toggle a global flag?
-      // For simplicity, we toggle the active video if playing, else we set a wish.
+      // Toggle state for active video if present
       if (activeVideo) {
         activeVideo.muted = !activeVideo.muted;
         updateMuteIcon(activeVideo.muted);
       }
     });
+
+    // 2. Flashlight Control
+    const torchBtn = document.querySelector("#torch-btn");
+    let isTorchOn = false;
+
+    torchBtn.addEventListener('click', async () => {
+      try {
+        // Get the active video track from the scene's webcam stream
+        const stream = scene.systems['mindar-image-system'].video.srcObject;
+        const track = stream.getVideoTracks()[0];
+
+        // Toggle
+        isTorchOn = !isTorchOn;
+        await track.applyConstraints({
+          advanced: [{ torch: isTorchOn }]
+        });
+
+        // Update Icon
+        torchBtn.style.color = isTorchOn ? '#ffff00' : 'rgba(255, 255, 255, 0.9)';
+        torchBtn.style.borderColor = isTorchOn ? '#ffff00' : 'rgba(255, 255, 255, 0.15)';
+      } catch (err) {
+        console.warn("Flashlight not supported or failed", err);
+        alert("Flashlight not available on this device/browser.");
+      }
+    });
+
+    // 3. Recording Logic
+    const recBtn = document.querySelector("#rec-btn");
+    let mediaRecorder;
+    let recordedChunks = [];
+    let isRecording = false;
+
+    recBtn.addEventListener('click', () => {
+      if (!isRecording) {
+        startRecording();
+      } else {
+        stopRecording();
+      }
+    });
+
+    function startRecording() {
+      try {
+        const canvas = scene.canvas;
+        // Capture stream from A-Frame canvas
+        const stream = canvas.captureStream(30);
+
+        // Merge with audio if needed (mic + video audio). 
+        // For simplicity, we just grab video canvas + system audio if possible, 
+        // but browser security often limits capturing system audio directly without user gesture for sharing.
+        // We'll focus on visual AR recording.
+
+        mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+
+        mediaRecorder.ondataavailable = (e) => {
+          if (e.data.size > 0) recordedChunks.push(e.data);
+        };
+
+        mediaRecorder.onstop = saveRecording;
+
+        mediaRecorder.start();
+        isRecording = true;
+
+        // UI Change
+        recBtn.style.background = 'rgba(255, 0, 0, 0.8)';
+        recBtn.innerHTML = '<i class="fas fa-stop"></i>';
+
+        // Hide other controls for cleaner recording? Optional.
+        // uiLayer.classList.add('recording-mode'); 
+      } catch (e) {
+        console.error("Recording failed", e);
+        alert("Recording not supported.");
+      }
+    }
+
+    function stopRecording() {
+      if (!mediaRecorder) return;
+      mediaRecorder.stop();
+      isRecording = false;
+
+      // UI Change
+      recBtn.style.background = ''; // reset to default glass
+      recBtn.innerHTML = '<i class="fas fa-video"></i>';
+    }
+
+    function saveRecording() {
+      const blob = new Blob(recordedChunks, { type: 'video/webm' });
+      recordedChunks = [];
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `ar-memory-${Date.now()}.webm`;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+      }, 100);
+    }
 
     // 2. Screenshot Logic
     const snapBtn = document.querySelector("#snap-btn");
@@ -406,34 +504,49 @@
       const el = document.querySelector(`#${t.id}`);
       const vid = document.querySelector(t.videoId);
 
+      let lossTimeout;
+
       el.addEventListener("targetFound", () => {
         console.log(`Target Found: ${t.id}`);
+
+        // Clear any pending loss timeout (Smooth Tracking)
+        if (lossTimeout) {
+          clearTimeout(lossTimeout);
+          lossTimeout = null;
+        }
 
         // Hide Scanner
         scannerOverlay.classList.add('hidden');
 
         activeVideo = vid;
-        // Start UNMUTED by default (PRO feature req)
+        // Start UNMUTED by default
         vid.muted = false;
         updateMuteIcon(false);
-        vid.currentTime = 0;
-        vid.play().catch(e => {
-          console.warn("Autoplay blocked, waiting for interaction", e);
-          // Optional: Show a "Tap to Play" hint here if needed
-          // For now, we leave the mute button logic as fallback
-        });
+
+        // Only play if not already playing to avoid stutter
+        if (vid.paused) {
+          vid.currentTime = 0;
+          vid.play().catch(e => console.warn("Autoplay blocked", e));
+        }
 
         // Hide "Action Button" if visible
         galleryBtn.classList.remove('visible');
       });
 
       el.addEventListener("targetLost", () => {
-        console.log(`Target Lost: ${t.id}`);
-        // Show Scanner
-        scannerOverlay.classList.remove('hidden');
+        console.log(`Target Lost: ${t.id} - Waiting for debounce...`);
 
-        vid.pause();
-        activeVideo = null;
+        // SMOOTH TRACKING: Wait 500ms before actually hiding content
+        lossTimeout = setTimeout(() => {
+          console.log(`Target Lost Confirmed: ${t.id}`);
+
+          // Show Scanner
+          scannerOverlay.classList.remove('hidden');
+
+          vid.pause();
+          activeVideo = null;
+          lossTimeout = null;
+        }, 500); // 500ms debounce buffer
       });
 
       // Feature: Action on Finish

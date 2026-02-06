@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>AR Memory Frame (Pro)</title>
+  
+  <!-- A-Frame & MindAR -->
+  <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+  
+  <!-- FontAwesome & Fonts -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+
+  <style>
+    /* -------------------------------------------------------------------------
+       AR PRO FRAME - CORE STYLING
+       Theme: Minimalist / Glassmorphism / Dark Mode
+    ------------------------------------------------------------------------- */
+    body {
+      margin: 0;
+      overflow: hidden;
+      font-family: 'Outfit', sans-serif;
+      background-color: #000; /* Fallback */
+    }
+
+    /* --- UI LAYER --- */
+    .ui-container {
+      position: fixed;
+      bottom: 40px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 25px;
+      z-index: 100;
+      pointer-events: none; /* Let clicks pass through around buttons */
+    }
+
+    /* Pointer events restoration for buttons */
+    .glass-btn {
+      pointer-events: auto;
+      background: rgba(20, 20, 20, 0.65);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px); /* Safari support */
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 50%;
+      width: 64px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: rgba(255, 255, 255, 0.9);
+      font-size: 24px;
+      cursor: pointer;
+      box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.5);
+      transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    }
+
+    .glass-btn:active {
+      transform: scale(0.9);
+      background: rgba(255, 255, 255, 0.1);
+    }
+    
+    .glass-btn:hover {
+      background: rgba(40, 40, 40, 0.8);
+      border-color: rgba(255, 255, 255, 0.3);
+      box-shadow: 0 15px 50px -12px rgba(0, 0, 0, 0.6);
+    }
+
+    /* --- SNAPSHOT FLASH --- */
+    #flash {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: white;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 999;
+      transition: opacity 0.15s ease-out;
+    }
+
+    /* --- SCAN GUIDE --- */
+    .scan-guide {
+      position: fixed;
+      top: 40px;
+      width: 100%;
+      text-align: center;
+      color: rgba(255, 255, 255, 0.7);
+      font-weight: 400;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      font-size: 13px;
+      pointer-events: none;
+      z-index: 10;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    }
+
+    /* --- ACTION BUTTON (HIDDEN DEFAULT) --- */
+    .action-btn {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.9);
+      background: rgba(255, 255, 255, 0.95);
+      color: #000;
+      padding: 12px 30px;
+      border-radius: 30px;
+      font-weight: 600;
+      text-decoration: none;
+      opacity: 0;
+      pointer-events: none;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+      transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); /* Bouncy pop */
+      z-index: 200;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .action-btn.visible {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translate(-50%, -50%) scale(1);
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- UI Overlays -->
+  <div class="scan-guide">Scan Target Photo</div>
+  <div id="flash"></div>
+
+  <div class="ui-container" id="ui-layer">
+    <div class="glass-btn" id="mute-btn" title="Toggle Audio"><i class="fas fa-volume-mute"></i></div>
+    <div class="glass-btn" id="snap-btn" title="Take Screenshot"><i class="fas fa-camera"></i></div>
+  </div>
+
+  <!-- Action on Finish (Gallery Link) -->
+  <!-- Change href to your actual gallery link -->
+  <a href="#" class="action-btn" id="gallery-btn">
+    <span>View Full Gallery</span>
+    <i class="fas fa-arrow-right"></i>
+  </a>
+
+  <!-- AR SCENE
+       mindar-image: path to compiled .mind file
+       vr-mode-ui: disabled to hide default VR button
+       renderer: preserveDrawingBuffer=true required for screenshots
+  -->
+  <a-scene mindar-image="imageTargetSrc: assets/targets.mind; uiScanning: no;" 
+           vr-mode-ui="enabled: false" 
+           device-orientation-permission-ui="enabled: false"
+           renderer="preserveDrawingBuffer: true, alpha: true, colorManagement: true, physicalLights: true">
+
+    <a-assets>
+      <!-- ASSET MANAGEMENT -->
+      <!-- Video 1 -->
+      <video id="arVideo1" 
+             src="assets/video1.mp4" 
+             loop="false" 
+             playsinline 
+             webkit-playsinline 
+             crossorigin="anonymous"></video>
+      
+      <!-- Video 2 (For multi-target demo) -->
+      <!-- <video id="arVideo2" src="assets/video2.mp4" ... ></video> -->
+    </a-assets>
+
+    <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+
+    <!-- 
+      TARGET 1 
+      Index 0 in the .mind file
+    -->
+    <a-entity mindar-image-target="targetIndex: 0" id="target-0">
+      
+      <!-- Video Plane -->
+      <!-- opacity: 0.99 fixes z-fighting/transparency bugs in some WebXR contexts -->
+      <a-video src="#arVideo1" 
+               width="1" height="1.5" 
+               position="0 0 0"
+               opacity="0.99"></a-video>
+      
+      <!-- 3D Floating Caption container -->
+      <a-entity position="0 0.9 0.1">
+        <!-- Background glass for text -->
+        <a-plane color="#000" 
+                 opacity="0.6" 
+                 width="0.9" height="0.18" 
+                 position="0 0 -0.01"></a-plane>
+        
+        <!-- Text -->
+        <a-text value="THE MEMORY • 2024" 
+                color="#FFF" 
+                align="center" 
+                width="2.5"
+                font="roboto"
+                shader="msdf">
+        </a-text>
+      </a-entity>
+
+    </a-entity>
+
+
+    <!-- 
+      TARGET 2 (Template)
+      Uncomment and setup strictly if creating multi-target
+    -->
+    <!--
+    <a-entity mindar-image-target="targetIndex: 1" id="target-1">
+      <a-video src="#arVideo2" width="1" height="1" position="0 0 0"></a-video>
+      ...
+    </a-entity>
+    -->
+
+  </a-scene>
+
+  <script>
+    // --- APP LOGIC ---
+
+    const scene = document.querySelector("a-scene");
+    const uiLayer = document.querySelector("#ui-layer");
+    const flash = document.querySelector("#flash");
+    const galleryBtn = document.querySelector("#gallery-btn");
+
+    // Targets configuration
+    // Add more here for Gallery Mode: { id: 'target-0', videoId: '#arVideo1' }, ...
+    const targets = [
+      { id: 'target-0', videoId: '#arVideo1' }
+    ];
+
+    let activeVideo = null;
+
+    // 1. Audio Control
+    const muteBtn = document.querySelector("#mute-btn");
+    
+    function updateMuteIcon(isMuted) {
+      muteBtn.innerHTML = isMuted ? '<i class="fas fa-volume-mute"></i>' : '<i class="fas fa-volume-up"></i>';
+    }
+
+    muteBtn.addEventListener('click', () => {
+      // Toggle global state or active video state? 
+      // Better to check active video, if none, toggle a global flag?
+      // For simplicity, we toggle the active video if playing, else we set a wish.
+      if (activeVideo) {
+        activeVideo.muted = !activeVideo.muted;
+        updateMuteIcon(activeVideo.muted);
+      }
+    });
+
+    // 2. Screenshot Logic
+    const snapBtn = document.querySelector("#snap-btn");
+    
+    snapBtn.addEventListener('click', () => {
+      // Hide UI
+      uiLayer.style.display = 'none';
+      if (galleryBtn) galleryBtn.style.display = 'none';
+
+      // Flash
+      flash.style.opacity = '0.8';
+      setTimeout(() => { flash.style.opacity = '0'; }, 150);
+
+      // Capture after a short delay to ensure UI is hidden
+      setTimeout(() => {
+        // A-Frame screenshot component
+        // Note: 'perspective' captures the 3D scene (video + augmented content)
+        // 'equirectangular' is for 360.
+        scene.components.screenshot.capture('perspective');
+        
+        // Restore UI
+        uiLayer.style.display = 'flex';
+        if (galleryBtn) galleryBtn.style.display = 'flex'; // Note: btn has flex logic in CSS via class?
+        // actually .action-btn is absolute/fixed, display block or flex works.
+        // But we rely on .visible class for it usually.
+        // Just clearing 'none' to let CSS rule take over if it was active.
+        if (galleryBtn.classList.contains('visible')) {
+            galleryBtn.style.display = '';
+        }
+      }, 250);
+    });
+
+    // 3. Target Handlers & Video Logic
+    targets.forEach(t => {
+      const el = document.querySelector(`#${t.id}`);
+      const vid = document.querySelector(t.videoId);
+
+      el.addEventListener("targetFound", () => {
+        console.log(`Target Found: ${t.id}`);
+        activeVideo = vid;
+        // Start muted by default as per requirements
+        vid.muted = true; 
+        updateMuteIcon(true);
+        vid.currentTime = 0;
+        vid.play();
+        
+        // Hide "Action Button" if visible
+        galleryBtn.classList.remove('visible');
+      });
+
+      el.addEventListener("targetLost", () => {
+        console.log(`Target Lost: ${t.id}`);
+        vid.pause();
+        activeVideo = null;
+      });
+      
+      // Feature: Action on Finish
+      vid.addEventListener('ended', () => {
+        console.log("Video Finished");
+        galleryBtn.classList.add('visible');
+      });
+    });
+
+  </script>
+</body>
+</html>
